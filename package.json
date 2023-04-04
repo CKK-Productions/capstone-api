@@ -6,20 +6,22 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
-    "start": "node dist/index.js",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
+    "start": "node build/index.js",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q build/index.js\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.3.4",
+    "bcrypt": "^5.1.0",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "jquery": "^3.6.4",
     "typescript": "^5.0.2"
   },
   "devDependencies": {
+    "@types/express": "^4.17.17",
     "@types/jquery": "^3.5.16",
     "concurrently": "^8.0.1",
     "nodemon": "^2.0.22"

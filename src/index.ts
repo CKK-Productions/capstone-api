@@ -1,125 +1,88 @@
-
+import express, {Express, Request, Response} from 'express';
+import sqlite3 from 'sqlite3';
+import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import { Voice, getTTS } from './tts.js';
 import fs from 'fs';
-
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcrypt');
-
+import cors from 'cors'
 dotenv.config()
 
-const app = express();
-const port = process.env.PORT || 3000;
-app.use(express.json());
+const app: Express = express();
+const port = 3000;
+app.use(express.json(), cors({
+  origin: 'http://localhost:5173'
+}));
 
-// create a new sqlite database connection
-const db = new sqlite3.Database('mydata.db', (err) => {
+let db = new sqlite3.Database('mydata.db', (err) => {
     if (err) {
-      console.error(err.message);
-    } else {
-      console.log('Connected to the database.');
+        return console.error(err.message);
     }
-  });
+    console.log("connected to db!");
+})
 
-// Visualization when loading page
+
 app.get('/', (req: Request, res: Response) => {
     res.send("Hello");
 });
 
 //create new account
-app.post('/employees', async (req: Request, res: Response) => {
-    console.log(req.body)
-    const { fname, lname, email } = req.body;
+app.post('/api/accounts', async (req: Request, res: Response) => {
+    console.log(req.body);
+    const { fname, lname, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     db.run(
-        'INSERT INTO employee (fname, lname, email) VALUES (?, ?, ?)',
-        [fname, lname, email],
+        'INSERT INTO employee (fname, lname, email, password) VALUES (?, ?, ?, ?)',
+        [fname, lname, email, hashedPassword],
         (err) => {
             if (err) {
                 console.error(err);
-                res.status(500).send('Server error');
+                res.status(500).send({error: "Server Error"});
             } else {
-                res.status(200).send('Employee added successfully');
+                res.status(200).send({message: "Success!"});
             }
         }
     )
 });
 
-// define a POST endpoint for creating a new account
-app.post('/api/accounts', async (req: Request, res: Response) => {
-    const { fname, lname, email, password } = req.body;
-  
-    // Hash the password using bcrypt
-    const hashedPassword = await bcrypt.hash(password, 10);
-  
-    // create an SQL query to add the new account to the database employee table
-    let sql = `INSERT INTO employee (fname, lname, email) VALUES (?, ?, ?)`;
-    let params = [fname, lname, email];
-  
-    // execute the SQL query
-    db.run(sql, params, function(err) {
-      if (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Internal server error' });
-      } else {
-        res.json({ message: 'Account created successfully.' });
-      }
-    })
-    
-    // check if this is how you should add to other tables at the same time
-    // create an SQL query to add the new account to the database credential table
-    sql = `INSERT INTO credential_id (password) VALUES (?)`
-    params = [hashedPassword];
+app.post('/api/login', async (req, res) => {
+  console.log(req.body);
+  const { email , password } = req.body;
 
-    // execute the SQL query
-    db.run(sql, params, function(err) {
-        if (err) {
-            console.error(err.message);
-            res.status(500).send('Server error');
-        } else {
-            res.status(200).send('Employee added successfully');
-        }
-    });
+  // create an SQL query to get the user account from the database
+  const sql = `SELECT * FROM employee WHERE email = ?`;
+  const params = [email];
+
+  // execute the SQL query
+  db.get(sql, params, async (err, row) => {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).send({ error: 'Internal server error' });
+    }
+
+    if (!row) {
+      res.status(400).send({error: "Invalid Login Data"});
+      return;
+    }
+
+    // Compare the hashed password with the provided password using bcrypt
+    const match = await bcrypt.compare(password, row.password);
+    if (!match) {
+      return res.status(401).send({error: "Invalid Email or Password"});
+    }
+
+    // const test = row.password;
+    // console.log(test);
+    // console.log(row.employee_id);
+    //res.send(row.employee_id);
+    //res.send({token: "inserttokenhere"});
+    res.send({login: "true"});
+  });
 });
-
-// define a POST endpoint for logging in
-app.post('/api/login', async (req : Request, res : Response) => {
-    const { username, password } = req.body;
-  
-  
-    // create an SQL query to get the user account from the database
-    const sql = `SELECT * FROM accounts WHERE username = ?`;
-    const params = [username];
-  
-    // execute the SQL query
-    db.get(sql, params, async (err, row) => {
-      if (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
-      }
-  
-      if (!row) {
-        res.status(400).send('Invalid login data');
-        return;
-      }
-  
-      // Compare the hashed password with the provided password using bcrypt
-      const match = await bcrypt.compare(password, row.password);
-      if (!match) {
-        return res.status(401).send('Invalid email or password');
-      }
-  
-      res.send('Login successful.');
-    });
-});
-
 
 app.listen(port, () => {
-    console.log(`Server listening on port ${port}.`);
-    
-    // was used for establishing database
-    //const dataSql = fs.readFileSync('./src/data.sql', "utf-8");
-    //db.exec(dataSql);
-});
+    console.log("Server running");
+    // const dataSql = fs.readFileSync('./src/data.sql', "utf-8");
 
+    // db.exec(dataSql);
+});

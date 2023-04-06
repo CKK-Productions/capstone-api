@@ -12,123 +12,72 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const sqlite3_1 = __importDefault(require("sqlite3"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const fs_1 = __importDefault(require("fs"));
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcrypt');
+const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
-const app = express();
-const port = process.env.PORT || 3000;
-app.use(express.json());
-// create a new sqlite database connection
-const db = new sqlite3.Database('mydata.db', (err) => {
+const app = (0, express_1.default)();
+const port = 3000;
+app.use(express_1.default.json(), (0, cors_1.default)({
+    origin: 'http://localhost:5173'
+}));
+let db = new sqlite3_1.default.Database('mydata.db', (err) => {
     if (err) {
-        console.error(err.message);
+        return console.error(err.message);
     }
-    else {
-        console.log('Connected to the database.');
-    }
+    console.log("connected to db!");
 });
 app.get('/', (req, res) => {
     res.send("Hello");
 });
 //create new account
-app.post('/employees', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post('/api/accounts', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body);
-    const { fname, lname, email } = req.body;
-    db.run('INSERT INTO employee (fname, lname, email) VALUES (?, ?, ?)', [fname, lname, email], (err) => {
+    const { fname, lname, email, password } = req.body;
+    const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+    db.run('INSERT INTO employee (fname, lname, email, password) VALUES (?, ?, ?, ?)', [fname, lname, email, hashedPassword], (err) => {
         if (err) {
             console.error(err);
-            res.status(500).send('Server error');
+            res.status(500).send({ error: "Server Error" });
         }
         else {
-            res.status(200).send('Employee added successfully');
+            res.status(200).send({ message: "Success!" });
         }
     });
 }));
-// define a POST endpoint for creating a new account
-app.post('/api/accounts', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { fname, lname, email, password } = req.body;
-    // Hash the password using bcrypt
-    const hashedPassword = yield bcrypt.hash(password, 10);
-    // create an SQL query to add the new account to the database employee table
-    let sql = `INSERT INTO employee (fname, lname, email) VALUES (?, ?, ?)`;
-    let params = [fname, lname, email];
-    // execute the SQL query
-    db.run(sql, params, function (err) {
-        if (err) {
-            console.error(err.message);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-        else {
-            res.json({ message: 'Account created successfully.' });
-        }
-    });
-    // create an SQL query to add the new account to the database credential table
-    sql = `INSERT INTO credential_id (password) VALUES (?)`;
-    params = [hashedPassword];
-    // execute the SQL query
-    db.run(sql, params, function (err) {
-        if (err) {
-            console.error(err.message);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-        else {
-            res.json({ message: 'Account created successfully.' });
-        }
-    });
-}));
-// define a POST endpoint for logging in
 app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, password } = req.body;
+    console.log(req.body);
+    const { email, password } = req.body;
     // create an SQL query to get the user account from the database
-    const sql = `SELECT * FROM accounts WHERE username = ?`;
-    const params = [username];
+    const sql = `SELECT * FROM employee WHERE email = ?`;
+    const params = [email];
     // execute the SQL query
     db.get(sql, params, (err, row) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
             console.error(err.message);
-            return res.status(500).json({ error: 'Internal server error' });
+            return res.status(500).send({ error: 'Internal server error' });
         }
         if (!row) {
-            res.status(400).json({ error: 'Invalid login data' });
+            res.status(400).send({ error: "Invalid Login Data" });
             return;
         }
         // Compare the hashed password with the provided password using bcrypt
-        const match = yield bcrypt.compare(password, row.password);
+        const match = yield bcrypt_1.default.compare(password, row.password);
         if (!match) {
-            return res.status(401).send('Invalid email or password');
+            return res.status(401).send({ error: "Invalid Email or Password" });
         }
-        res.json({ message: 'Login successful.' });
-    }));
-}));
-// define a POST endpoint for logging in
-app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, password } = req.body;
-    // create an SQL query to get the user account from the database
-    const sql = `SELECT * FROM accounts WHERE username = ?`;
-    const params = [username]; //Does this connect through tables?
-    // execute the SQL query
-    db.get(sql, params, (err, row) => __awaiter(void 0, void 0, void 0, function* () {
-        if (err) {
-            console.error(err.message);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-        if (!row) {
-            res.status(400).json({ error: 'Invalid login data' });
-            return;
-        }
-        // Compare the hashed password with the provided password using bcrypt
-        const match = yield bcrypt.compare(password, row.password);
-        if (!match) {
-            return res.status(401).send('Invalid email or password');
-        }
-        res.json({ message: 'Login successful.' });
+        // const test = row.password;
+        // console.log(test);
+        // console.log(row.employee_id);
+        //res.send(row.employee_id);
+        //res.send({token: "inserttokenhere"});
+        res.send({ login: "true" });
     }));
 }));
 app.listen(port, () => {
-    console.log(`Server listening on port ${port}.`);
-    const dataSql = fs_1.default.readFileSync('./src/data.sql', "utf-8");
-    db.exec(dataSql);
+    console.log("Server running");
+    // const dataSql = fs.readFileSync('./src/data.sql', "utf-8");
+    // db.exec(dataSql);
 });

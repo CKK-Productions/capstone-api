@@ -4,14 +4,8 @@ create table IF NOT EXISTS employee (
     employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
     fname CHAR(20) NOT NULL,
     lname CHAR(20) NOT NULL,
-    email CHAR(100) NOT NULL UNIQUE
-);
-
-create table IF NOT EXISTS credential (
-    credential_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    password BLOB NOT NULL,
-    employee_id INTEGER NOT NULL,
-    FOREIGN KEY (employee_id) REFERENCES employee(employee_id)
+    email CHAR(100) NOT NULL UNIQUE,
+	password BLOB NOT NULL
 );
 
 create table IF NOT EXISTS question (

@@ -71,12 +71,14 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).send({error: "Invalid Email or Password"});
     }
 
+    const id = row.employee_id;
+
     // const test = row.password;
     // console.log(test);
     // console.log(row.employee_id);
     //res.send(row.employee_id);
     //res.send({token: "inserttokenhere"});
-    res.send({login: "true"});
+    res.send({login: id);
   });
 });
 

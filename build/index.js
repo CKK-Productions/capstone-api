@@ -23,7 +23,7 @@ const port = 3000;
 app.use(express_1.default.json(), (0, cors_1.default)({
     origin: 'http://localhost:5173'
 }));
-let db = new sqlite3_1.default.Database('mydata.db', (err) => {
+let db = new sqlite3_1.default.Database('database.db', (err) => {
     if (err) {
         return console.error(err.message);
     }
@@ -40,7 +40,7 @@ app.post('/api/accounts', (req, res) => __awaiter(void 0, void 0, void 0, functi
     db.run('INSERT INTO employee (fname, lname, email, password) VALUES (?, ?, ?, ?)', [fname, lname, email, hashedPassword], (err) => {
         if (err) {
             console.error(err);
-            res.status(500).send({ error: "Server Error" });
+            res.status(500).send({ message: "Server Error" });
         }
         else {
             res.status(200).send({ message: "Success!" });
@@ -69,13 +69,53 @@ app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function*
             return res.status(401).send({ error: "Invalid Email or Password" });
         }
         const id = row.employee_id;
-        // const test = row.password;
-        // console.log(test);
-        // console.log(row.employee_id);
-        //res.send(row.employee_id);
-        //res.send({token: "inserttokenhere"});
         res.send({ login: id });
     }));
+}));
+// define a GET endpoint for getting the name of an account
+// app.get('employee/:id/fname', async (req, res) => {
+//   const accountId = req.params.id;
+//   // create an SQL query to get the password of the account from the database
+//   const getFnameSql = `SELECT fname FROM employee WHERE employee_id = ?`;
+//   const getFnameParams = [accountId];
+//   // execute the SQL query
+//   db.get(getFnameSql, getFnameParams, async (err, row) => {
+//     if (err) {
+//       console.error(err.message);
+//       res.status(500).json({ message: 'Internal server error' });
+//     } else if (!row) {
+//       res.status(404).json({ message: 'Account not found' });
+//     } else {
+//       res.json({ message: row.fname });
+//     }
+//   });
+// });
+// Insert into temp
+app.post('/api/temp', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(req.body);
+    const { tempnum, current } = req.body;
+    console.log(tempnum);
+    db.run('INSERT INTO temp (tempacc, current) VALUES (?, ?)', [tempnum, current], (err) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send({ error: "Server Error Temp" });
+        }
+        else {
+            res.status(200).send({ message: "Success Temp!" });
+        }
+    });
+}));
+// remove from temp
+app.post('/api/tempRid', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    db.run('DELETE FROM temp', (err) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send({ error: "Server Error Temp" });
+        }
+        else {
+            res.status(200).send({ message: "Success Temp!" });
+        }
+    });
 }));
 app.listen(port, () => {
     console.log("Server running");

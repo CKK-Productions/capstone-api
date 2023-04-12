@@ -39,6 +39,11 @@ create table IF NOT EXISTS level_status (
     description CHAR(100) NOT NULL
 );
 
+create table IF NOT EXISTS temp (
+    tempacc INT,
+    current CHAR(10)
+);
+
 create table IF NOT EXISTS game (
     game_id INTEGER PRIMARY KEY AUTOINCREMENT,
     title CHAR(100) NOT NULL,

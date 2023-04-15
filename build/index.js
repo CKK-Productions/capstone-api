@@ -73,23 +73,25 @@ app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function*
     }));
 }));
 // define a GET endpoint for getting the name of an account
-// app.get('employee/:id/fname', async (req, res) => {
-//   const accountId = req.params.id;
-//   // create an SQL query to get the password of the account from the database
-//   const getFnameSql = `SELECT fname FROM employee WHERE employee_id = ?`;
-//   const getFnameParams = [accountId];
-//   // execute the SQL query
-//   db.get(getFnameSql, getFnameParams, async (err, row) => {
-//     if (err) {
-//       console.error(err.message);
-//       res.status(500).json({ message: 'Internal server error' });
-//     } else if (!row) {
-//       res.status(404).json({ message: 'Account not found' });
-//     } else {
-//       res.json({ message: row.fname });
-//     }
-//   });
-// });
+app.get('employee/:id/fname', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const accountId = req.params.id;
+    // create an SQL query to get the password of the account from the database
+    const getFnameSql = `SELECT fname FROM employee WHERE employee_id = ?`;
+    const getFnameParams = [accountId];
+    // execute the SQL query
+    db.get(getFnameSql, getFnameParams, (err, row) => __awaiter(void 0, void 0, void 0, function* () {
+        if (err) {
+            console.error(err.message);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+        else if (!row) {
+            res.status(404).json({ message: 'Account not found' });
+        }
+        else {
+            res.json({ message: row.fname });
+        }
+    }));
+}));
 // Insert into temp
 app.post('/api/temp', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body);

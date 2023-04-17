@@ -21,11 +21,6 @@ create table IF NOT EXISTS question_answer_option (
     FOREIGN KEY (question_id) REFERENCES question(question_id)
 );
 
-create table IF NOT EXISTS level (
-    level_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    description CHAR(100) NOT NULL
-);
-
 create table IF NOT EXISTS level_question (
     level_question_id INTEGER PRIMARY KEY AUTOINCREMENT,
     level_id INT NOT NULL,
@@ -34,31 +29,26 @@ create table IF NOT EXISTS level_question (
     FOREIGN KEY (question_id) REFERENCES question(question_id)
 );
 
-create table IF NOT EXISTS level_status (
-    level_status_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    description CHAR(100) NOT NULL
-);
-
 create table IF NOT EXISTS temp (
     tempacc INT,
-    current CHAR(10)
+    current CHAR(10),
+    FOREIGN KEY (tempacc) REFERENCES employee(employee_id)
+);
+
+create table IF NOT EXISTS feedback (
+    employee INT,
+    respond CHAR(300),
+    FOREIGN KEY (employee) REFERENCES employee(employee_id)
 );
 
 create table IF NOT EXISTS game (
     game_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title CHAR(100) NOT NULL,
     level_id INT NOT NULL,
     level_status_id INT NOT NULL,
     initiated_by INT NOT NULL,
-    initiated_on DATE,
-    completed_by INT NOT NULL,
-    completed_on DATE,
 	fail_amount INT NOT NULL,
 	pass CHAR(1),
-    FOREIGN KEY (level_id) REFERENCES level(level_id),
-    FOREIGN KEY (level_status_id) REFERENCES level_status(level_status_id),
-    FOREIGN KEY (initiated_by) REFERENCES employee(employee_id),
-    FOREIGN KEY (completed_by) REFERENCES employee(employee_id)
+    FOREIGN KEY (initiated_by) REFERENCES employee(employee_id)
 );
 
 COMMIT; 

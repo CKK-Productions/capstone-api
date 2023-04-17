@@ -16,6 +16,7 @@ const express_1 = __importDefault(require("express"));
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const fs_1 = __importDefault(require("fs"));
 const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -72,26 +73,113 @@ app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.send({ login: id });
     }));
 }));
-// define a GET endpoint for getting the name of an account
-app.get('employee/:id/fname', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const accountId = req.params.id;
-    // create an SQL query to get the password of the account from the database
-    const getFnameSql = `SELECT fname FROM employee WHERE employee_id = ?`;
-    const getFnameParams = [accountId];
-    // execute the SQL query
-    db.get(getFnameSql, getFnameParams, (err, row) => __awaiter(void 0, void 0, void 0, function* () {
-        if (err) {
-            console.error(err.message);
-            res.status(500).json({ message: 'Internal server error' });
-        }
-        else if (!row) {
-            res.status(404).json({ message: 'Account not found' });
+// app.get('/employee', async (req: Request, res: Response) => {
+//   try {
+//     const getAllEmployeesSql = 'SELECT * FROM employee';
+//     const rows = await db.all(getAllEmployeesSql);
+//     console.log('Rows:', rows);
+//     if (rows.length === 0) {
+//       console.log('No employees found');
+//     } else {
+//       console.log('Found ' + rows.length + ' employees.');
+//     }
+//   } catch (err) {
+//     console.error(err.message);
+//   }
+// });
+app.get('/employee', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const employees = [];
+        const getAllEmployeesSql = 'SELECT * FROM employee';
+        console.log('Executing SQL query:', getAllEmployeesSql);
+        db.each(getAllEmployeesSql, (err, row) => {
+            if (err) {
+                console.error('Error fetching employees:', err.message);
+            }
+            else {
+                console.log('Fetched employee:', row);
+                employees.push(row);
+            }
+        }, () => {
+            console.log('Finished fetching employees. Found', employees.length, 'employees.');
+            res.json(employees);
+        });
+    }
+    catch (err) {
+        console.error('Errors fetching employees:', err.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}));
+app.get('/employee/:employee_id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { employee_id } = req.params;
+        console.log('ID:', employee_id);
+        const getEmployeeSql = 'SELECT * FROM employee WHERE employee_id = ?';
+        console.log('Query:', getEmployeeSql);
+        const row = yield db.get(getEmployeeSql, employee_id);
+        console.log('Row:', row);
+        if (!row) {
+            console.log("Can't find the employee");
+            res.sendStatus(404);
         }
         else {
-            res.json({ message: row.fname });
+            console.log('Found the employee with that ID', row);
+            res.json(row);
         }
-    }));
+    }
+    catch (err) {
+        console.error('Errors fetching employee:', err.message);
+        res.sendStatus(500);
+    }
 }));
+// app.get('/employee/:id', async (req: Request, res: Response) => {
+//   try {
+//     const { id } = req.params;
+//     const getEmployeeSql = 'SELECT * FROM employee WHERE employee_id = ?';
+//     const row = await db.get(getEmployeeSql, id);
+//     console.log('Row:', row);
+//     if (!row) {
+//       console.log('Cant find the employee');
+//       res.sendStatus(404);
+//     } else {
+//       console.log('Found the employee with that ID', row);
+//       res.json(row);
+//     }
+//   } catch (err) {
+//     console.error('Errors fetching employee:', err.message);
+//     res.sendStatus(500);
+//   }
+// });
+//create new feedback
+app.post('/api/feedback', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(req.body);
+    const { id, respond } = req.body;
+    db.run('INSERT INTO feedback (employee, respond) VALUES (?, ?)', [id, respond], (err) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send({ message: "Server Error" });
+        }
+        else {
+            res.status(200).send({ message: "Success!" });
+        }
+    });
+}));
+// app.get('/employee', async (req: Request, res: Response) => {
+//   try {
+//     const employees: Employee[] = [];
+//     const getAllEmployeesSql = 'SELECT * FROM employee';
+//     await db.each(getAllEmployeesSql, (err, row) => {
+//       if (err) {
+//         console.error(err.message);
+//       } else {
+//         employees.push(row);
+//       }
+//     });
+//     console.log('Employees:', employees);
+//   } catch (err) {
+//     console.error(err.message);
+//   }
+// });
 // Insert into temp
 app.post('/api/temp', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body);
@@ -119,8 +207,28 @@ app.post('/api/tempRid', (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
     });
 }));
+// define a GET endpoint for getting the temp
+app.get('/api/temp/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const accountId = req.params.id;
+    // create an SQL query to get the password of the account from the database
+    const getTempSql = `SELECT tempacc FROM temp WHERE current = ?`;
+    const getTempParams = [accountId];
+    // execute the SQL query
+    db.get(getTempSql, getTempParams, (err, row) => __awaiter(void 0, void 0, void 0, function* () {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send({ message: 'Internal server error' });
+        }
+        else if (!row) {
+            res.status(404).send({ message: 'Account not found' });
+        }
+        else {
+            res.send(res);
+        }
+    }));
+}));
 app.listen(port, () => {
     console.log("Server running");
-    // const dataSql = fs.readFileSync('./src/data.sql', "utf-8");
-    // db.exec(dataSql);
+    const dataSql = fs_1.default.readFileSync('./src/data.sql', "utf-8");
+    db.exec(dataSql);
 });

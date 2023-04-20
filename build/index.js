@@ -73,20 +73,54 @@ app.post('/api/login', (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.send({ login: id });
     }));
 }));
-// app.get('/employee', async (req: Request, res: Response) => {
-//   try {
-//     const getAllEmployeesSql = 'SELECT * FROM employee';
-//     const rows = await db.all(getAllEmployeesSql);
-//     console.log('Rows:', rows);
-//     if (rows.length === 0) {
-//       console.log('No employees found');
-//     } else {
-//       console.log('Found ' + rows.length + ' employees.');
-//     }
-//   } catch (err) {
-//     console.error(err.message);
-//   }
-// });
+//create Game submission
+app.post('/api/G1sub', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(req.body);
+    const { level_id, level_status_id, initiated_by, fail_amount, pass } = req.body;
+    db.run('INSERT INTO game (level_id, level_status_id, initiated_by, fail_amount, pass) VALUES (?, ?, ?, ?, ?)', [level_id, level_status_id, initiated_by, fail_amount, pass], (err) => {
+        if (err) {
+            console.error(err);
+            res.status(500).send({ message: "Server Error" });
+        }
+        else {
+            res.status(200).send({ message: "Success!" });
+        }
+    });
+}));
+//game 1 get
+app.get('/gameone/:initiated_by', (req, res) => {
+    const initiated_by = req.params.initiated_by;
+    const getGameSql = 'SELECT * FROM game WHERE initiated_by = ? AND level_id = 1';
+    db.get(getGameSql, initiated_by, (err, row) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Server error');
+        }
+        else if (!row) {
+            res.status(404).json(666);
+        }
+        else {
+            res.json(row.fail_amount);
+        }
+    });
+});
+//game 2 get
+app.get('/gametwo/:initiated_by', (req, res) => {
+    const initiated_by = req.params.initiated_by;
+    const getGameSql = 'SELECT * FROM game WHERE initiated_by = ? AND level_id = 2';
+    db.get(getGameSql, initiated_by, (err, row) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Server error');
+        }
+        else if (!row) {
+            res.status(404).json(666);
+        }
+        else {
+            res.json(row.pass);
+        }
+    });
+});
 app.get('/employee', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const employees = [];
@@ -110,46 +144,23 @@ app.get('/employee', (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.status(500).json({ message: 'Internal server error' });
     }
 }));
-app.get('/employee/:employee_id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { employee_id } = req.params;
-        console.log('ID:', employee_id);
-        const getEmployeeSql = 'SELECT * FROM employee WHERE employee_id = ?';
-        console.log('Query:', getEmployeeSql);
-        const row = yield db.get(getEmployeeSql, employee_id);
-        console.log('Row:', row);
-        if (!row) {
-            console.log("Can't find the employee");
-            res.sendStatus(404);
+//get name
+app.get('/employee/:employee_id', (req, res) => {
+    const employee_id = req.params.employee_id;
+    const getEmployeeSql = 'SELECT * FROM employee WHERE employee_id = ?';
+    db.get(getEmployeeSql, employee_id, (err, row) => {
+        if (err) {
+            console.error(err.message);
+            res.status(500).send('Server error');
+        }
+        else if (!row) {
+            res.status(404).send('Employee not found');
         }
         else {
-            console.log('Found the employee with that ID', row);
-            res.json(row);
+            res.json(row.fname);
         }
-    }
-    catch (err) {
-        console.error('Errors fetching employee:', err.message);
-        res.sendStatus(500);
-    }
-}));
-// app.get('/employee/:id', async (req: Request, res: Response) => {
-//   try {
-//     const { id } = req.params;
-//     const getEmployeeSql = 'SELECT * FROM employee WHERE employee_id = ?';
-//     const row = await db.get(getEmployeeSql, id);
-//     console.log('Row:', row);
-//     if (!row) {
-//       console.log('Cant find the employee');
-//       res.sendStatus(404);
-//     } else {
-//       console.log('Found the employee with that ID', row);
-//       res.json(row);
-//     }
-//   } catch (err) {
-//     console.error('Errors fetching employee:', err.message);
-//     res.sendStatus(500);
-//   }
-// });
+    });
+});
 //create new feedback
 app.post('/api/feedback', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.body);
@@ -207,26 +218,23 @@ app.post('/api/tempRid', (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
     });
 }));
-// define a GET endpoint for getting the temp
-app.get('/api/temp/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const accountId = req.params.id;
-    // create an SQL query to get the password of the account from the database
-    const getTempSql = `SELECT tempacc FROM temp WHERE current = ?`;
-    const getTempParams = [accountId];
-    // execute the SQL query
-    db.get(getTempSql, getTempParams, (err, row) => __awaiter(void 0, void 0, void 0, function* () {
+// get temp
+app.get('/temp/:current', (req, res) => {
+    const current = req.params.current;
+    const getTempSql = 'SELECT * FROM temp WHERE current = ?';
+    db.get(getTempSql, current, (err, row) => {
         if (err) {
             console.error(err.message);
-            res.status(500).send({ message: 'Internal server error' });
+            res.status(500).send('Server error');
         }
         else if (!row) {
-            res.status(404).send({ message: 'Account not found' });
+            res.status(404).send('Employee not found');
         }
         else {
-            res.send(res);
+            res.json(row.tempacc);
         }
-    }));
-}));
+    });
+});
 app.listen(port, () => {
     console.log("Server running");
     const dataSql = fs_1.default.readFileSync('./src/data.sql', "utf-8");
